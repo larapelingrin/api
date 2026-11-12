@@ -1,31 +1,30 @@
-const fs = require('fs');
-const path = require('path');
+//imports
+import fs from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const CAMINHO_ARQUIVO = path.join(__dirname, '..', 'bd', 'registros_alunos.json');
+/*Não importa onde será chamado, sempre vai conseguir 
+encontrar o arquivo
+*/
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const caminhoDados = path.join(__dirname, "..", "BD", "registro_alunos.json");
 
-function lerRegistros() {
-  try {
-    if (!fs.existsSync(CAMINHO_ARQUIVO)) {
-      fs.writeFileSync(CAMINHO_ARQUIVO, '[]', 'utf-8');
-      return [];
-    }
-    const conteudo = fs.readFileSync(CAMINHO_ARQUIVO, 'utf-8');
-    return JSON.parse(conteudo || '[]');
-  } catch (erro) {
-    throw new Error('Erro ao ler o arquivo de registros: ' + erro.message);
-  }
+//Lógica
+//ListarTodos - lê um arquivo local
+export async function listarTodos() {
+  const conteudo = await fs.readFile(caminhoDados, "utf-8");
+  return JSON.parse(conteudo);
 }
 
-function salvarRegistros(registros) {
-  try {
-    const jsonFormatado = JSON.stringify(registros, null, 2);
-    fs.writeFileSync(CAMINHO_ARQUIVO, jsonFormatado, 'utf-8');
-  } catch (erro) {
-    throw new Error('Erro ao salvar o arquivo de registros: ' + erro.message);
-  }
+//Escrever/Salvar
+//SalvarTodos - escrever em um arquivo local
+export async function salvarTodos(cadastros) {
+  await fs.writeFile(
+    caminhoDados, 
+    JSON.stringify(cadastros, null, 2),
+    "utf-8"
+    );
 }
 
-module.exports = {
-  lerRegistros,
-  salvarRegistros
-};
+//funcões auxiliares

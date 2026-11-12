@@ -1,156 +1,158 @@
+//imports
 import express from "express";
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";        
-                                                            
-const express = require('express');
-const { lerRegistros, salvarRegistros } = require('./funcoes/manipulador_arquivo');
-const { processarRegistro, sanitizarTexto } = require('./funcoes/processamento');
+import { listarTodos, salvarTodos } from "./MANIPULADOR/manipulador_arquivo.js";
 
-const app = express();
-const PORTA = 3000;
+const app = express(); //criação da instancia do express
+const PORT = 3000;
+app.use(express.json()); //convertendo de maneira mais direta (middleware)
 
-app.use(express.json());
+//Logica das rotas
+app.get("/", (req, res) => {
+  res.send("Bem vindo ao sistema de cadastro de alunos");
+});
 
-// Função auxiliar para validar ID inteiro positivo
-function validarId(idParam) {
-  const id = Number(idParam);
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
-
-// GET /alunos (com suporte a ?turma=3A e ?alerta=true)
-app.get('/alunos', (req, res) => {
+//Get /alunos - Listar todos os alunos
+app.get("/alunos", async (req, res) => {
   try {
-    let registros = lerRegistros();
-    const { turma, alerta } = req.query;
+    const alunos = await listarTodos();
+    return res.status(200).json(alunos);
+  } catch (error) {
+    //verificação interna de erro
+    console.log("Erro ao listar alunos: " + error.message);
 
-    if (turma) {
-      const turmaFiltro = sanitizarTexto(turma);
-      registros = registros.filter((r) => r.turma === turmaFiltro);
-    }
-
-    if (alerta !== undefined) {
-      const alertaBool = alerta === 'true';
-      registros = registros.filter((r) => r.alertaTempo === alertaBool);
-    }
-
-    return res.status(200).json(registros);
-  } catch (erro) {
-    return res.status(500).json({ erro: erro.message });
+    //resposta de erro para o cliente
+    res.status(500).send("Erro ao listar alunos: " + error.message);
   }
 });
 
-// GET /alunos/:id
-app.get('/alunos/:id', (req, res) => {
-  const id = validarId(req.params.id);
-  if (!id) {
-    return res.status(400).json({ erro: 'O ID informado deve ser um número inteiro positivo.' });
-  }
-
-  const registros = lerRegistros();
-  const aluno = registros.find((r) => r.id === id);
-
-  if (!aluno) {
-    return res.status(404).json({ erro: `Registro com ID ${id} não encontrado.` });
-  }
-
-  return res.status(200).json(aluno);
-});
-
-// POST /alunos
-app.post('/alunos', (req, res) => {
-  const { matricula, nome, turma, minutosFora } = req.body;
-
-  if (!matricula || !String(matricula).trim() || !nome || !String(nome).trim() || !turma || !String(turma).trim()) {
-    return res.status(400).json({
-      erro: 'Os campos matricula, nome e turma são obrigatórios.'
-    });
-  }
-
-  if (minutosFora !== undefined && (isNaN(Number(minutosFora)) || Number(minutosFora) < 0)) {
-    return res.status(400).json({
-      erro: 'O campo minutosFora deve ser um número maior ou igual a zero.'
-    });
-  }
-
+//POST /alunos - Cadastrar um novo aluno
+app.post("/aluno", async (req, res) => {
   try {
-    const registros = lerRegistros();
-    const proximoId = registros.length > 0 ? Math.max(...registros.map((r) => r.id)) + 1 : 1;
+    //desestruturação dos dados recebidos no corpo da requisição
+    const {
+      id,
+      matricula,
+      nome,
+      turma,
+      data,
+      presente,
+      motivoSaida,
+      minutosFora,
+      alertaTempo,
+    } = req.body;
 
-    const dadosProcessados = processarRegistro(req.body);
-    const novoRegistro = {
-      id: proximoId,
-      ...dadosProcessados
+    //validação de dados
+    if (
+      !id ||
+      !matricula ||
+      !nome ||
+      !turma ||
+      !data ||
+      presente === undefined
+    ) {
+      return res
+        .status(400)
+        .send(
+          "Dados incompletos. Por favor, forneça todos os campos obrigatórios.",
+        );
+    }
+
+    //criação do objeto aluno
+    const novoAluno = {
+      id: Number(id),
+      matricula,
+      nome,
+      turma,
+      data,
+      presente,
+      motivoSaida: motivoSaida || null, // Se não fornecido, será nulo
+      minutosFora: Number(minutosFora) || 0, // Se não fornecido, será 0
+      alertaTempo: alertaTempo || false, // Se não fornecido, será falso
     };
 
-    registros.push(novoRegistro);
-    salvarRegistros(registros);
+    //leitura do arquivo existente
+    const registrosAlunos = await listarTodos();
+    registrosAlunos.push(novoAluno); //adicionando o novo aluno ao array existente
 
-    return res.status(201).json(novoRegistro);
-  } catch (erro) {
-    return res.status(500).json({ erro: erro.message });
+    //salvando o arquivo atualizado
+    await salvarTodos(registrosAlunos);
+
+    res.status(201).send("Aluno cadastrado com sucesso!");
+  } 
+  catch (error) {
+    //verificação interna de erro
+    console.log("Erro ao cadastrar aluno: " + error.message);
+
+    //resposta de erro para o cliente
+    res.status(500).send("Erro ao cadastrar aluno: " + error.message);
   }
 });
 
-// PATCH /alunos/:id/retorno
-app.patch('/alunos/:id/retorno', (req, res) => {
-  const id = validarId(req.params.id);
-  if (!id) {
-    return res.status(400).json({ erro: 'O ID informado deve ser um número inteiro positivo.' });
-  }
+//funções auxiliares
+app.listen(PORT, () => {
+  console.log("Está rodando na porta: ", PORT);
+});
 
-  const { minutosFora } = req.body;
-  if (minutosFora === undefined || typeof minutosFora !== 'number' || isNaN(minutosFora) || minutosFora < 0) {
-    return res.status(400).json({
-      erro: 'Informe um valor numérico válido e não negativo para minutosFora.'
-    });
-  }
-
+//DELETE /aluno/:id - Deletar um aluno pelo ID
+app.delete("/aluno/:id", async (req, res) => {
   try {
-    const registros = lerRegistros();
-    const indice = registros.findIndex((r) => r.id === id);
+    const id = Number(req.params.id);
 
-    if (indice === -1) {
-      return res.status(404).json({ erro: `Registro com ID ${id} não encontrado.` });
+    //Leio os dados cadastrados
+    const dados = await listarTodos();
+
+     //Mantém apenas os itens com id diferente
+    const dadosAtualizados = dados.filter(
+      (aluno) => aluno.id !== id,
+    );
+
+     //verificar se deletou
+    if (dadosAtualizados.length === dados.length) {
+      return res.status(404).json({ erro: "Aluno não deletado" });
     }
+    //Salvar a lista nova
+    await salvarTodos(dadosAtualizados);
 
-    const registroAtualizado = processarRegistro({ minutosFora }, registros[indice]);
-    registros[indice] = registroAtualizado;
+    //Mensagem de resposta para insomina falando que deu certo
+    return res
+      .status(200)
+      .json({ mensagem: "Aluno excluído com sucesso" });
 
-    salvarRegistros(registros);
-    return res.status(200).json(registroAtualizado);
-  } catch (erro) {
-    return res.status(500).json({ erro: erro.message });
+  }
+   catch (error) {
+    console.log("Erro ao deletar aluno: " + error.message);
+    res.status(500).send("Erro ao deletar aluno: " + error.message);
   }
 });
 
-// DELETE /alunos/:id
-app.delete('/alunos/:id', (req, res) => {
-  const id = validarId(req.params.id);
-  if (!id) {
-    return res.status(400).json({ erro: 'O ID informado deve ser um número inteiro positivo.' });
-  }
+//PUT /aluno/:id - Atualizar um aluno pelo ID
+app.put("/aluno/:id", async (req, res) => {
+    try{
+        const id = Number(req.params.id);
 
-  try {
-    const registros = lerRegistros();
-    const indice = registros.findIndex((r) => r.id === id);
+        //Leio os dados cadastrados
+        const dados = await listarTodos();
 
-    if (indice === -1) {
-      return res.status(404).json({ erro: `Registro com ID ${id} não encontrado.` });
+        //Procuro o aluno pelo ID
+        const alunoIndex = dados.findIndex((aluno) => aluno.id === id); 
+
+        //Se não encontrar, retorna erro
+        if (alunoIndex === -1) {
+            return res.status(404).json({ erro: "Aluno não encontrado" });
+        }
+
+        //Atualiza os dados do aluno
+        const alunoAtualizado = { ...dados[alunoIndex], ...req.body };
+        dados[alunoIndex] = alunoAtualizado;
+
+        //Salva a lista atualizada
+        await salvarTodos(dados);
+
+        //Mensagem de resposta para insomina falando que deu certo
+        return res.status(200).json({ mensagem: "Aluno atualizado com sucesso", aluno: alunoAtualizado });
     }
-
-    const [registroExcluido] = registros.splice(indice, 1);
-    salvarRegistros(registros);
-
-    return res.status(200).json({
-      mensagem: 'Registro removido com sucesso.',
-      registro: registroExcluido
-    });
-  } catch (erro) {
-    return res.status(500).json({ erro: erro.message });
+    catch (error) {
+    console.log("Erro ao atualizar aluno: " + error.message);
+    res.status(500).send("Erro ao atualizar aluno: " + error.message);
   }
-});
-
-app.listen(PORTA, () => {
-  console.log(`Servidor rodando em http://localhost:${PORTA}`);
 });
