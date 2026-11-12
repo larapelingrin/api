@@ -1,0 +1,68 @@
+[
+    {
+"id": 1,
+"matricula": "2011A22",
+"nome": "Julia Posser Machanoker",
+"turma": "1A",
+"data": "2026-10-23",
+"presente": true,
+"motivoSaida": "Coordenação",
+"minutosFora": 10,
+"alertaTempo": false
+},
+{
+"id": 2,
+"matricula": "2009L14",
+"nome": "Joao Guilherme Perusso",
+"turma": "2A",
+"data": "2026-10-23",
+"presente": true,
+"motivoSaida": "Biblioteca",
+"minutosFora": 8,
+"alertaTempo": false
+},
+{
+"id": 3,
+"matricula": "2012A13",
+"nome": "Andrey Borges",
+"turma": "8A",
+"data": "2026-10-23",
+"presente": true,
+"motivoSaida": "Enfermaria",
+"minutosFora": 18,
+"alertaTempo": true
+},
+{
+"id": 4,
+"matricula": "2023A00",
+"nome": "Affonso Elian",
+"turma": "2A",
+"data": "2026-10-23",
+"presente": true,
+"motivoSaida": "Banheiro",
+"minutosFora": 5,
+"alertaTempo": false
+},
+{
+"id": 5,
+"matricula": "2008A01",
+"nome": "Isabelly Alamon",
+"turma": "3A",
+"data": "2026-10-23",
+"presente": true,
+"motivoSaida": "Banheiro",
+"minutosFora": 8,
+"alertaTempo": false
+},
+{
+"id": 6,
+"matricula": "2026A01",
+"nome": "Alvaro Emanuel",
+"turma": "8A",
+"data": "2026-10-23",
+"presente": true,
+"motivoSaida": "Coordenação",
+"minutosFora": 20,
+"alertaTempo": true
+}
+]

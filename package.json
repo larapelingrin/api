@@ -1,0 +1,17 @@
+{
+  "name": "api-alunosescola",
+  "version": "1.0.0",
+  "description": "api gerenciador de alunos",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch servidor.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Lara Croft",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.3.0"
+  }
+}
